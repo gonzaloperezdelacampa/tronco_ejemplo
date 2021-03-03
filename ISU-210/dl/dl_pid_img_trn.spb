@@ -1,0 +1,379 @@
+CREATE OR REPLACE PACKAGE BODY nwt_dl.dl_pid_img_trn
+AS
+   --
+   /* -------------------- DESCRIPCION --------------------
+   || Logica de datos del concepto intervencion definicion
+   */ -----------------------------------------------------
+   --
+   /* -------------------- VERSION = 1.00 -------------------- */
+   --
+   /* -------------------- MODIFICACIONES -----------------
+   || 2013/05/02 - FJMORENO - v 1.00
+   || Creacion
+   */ ------------------------------------------------------
+   --
+   /* --------------------------------------------------
+   || Aqui comienza la declaracion de variables GLOBALES
+   */ --------------------------------------------------
+   --
+   /* -------------------------------------------------
+   || Aqui comienza la declaracion de cursores GLOBALES
+   */ -------------------------------------------------
+   --
+   /* ---------------------------------------------------
+   || Aqui comienza la declaracion de constantes GLOBALES
+   */ ---------------------------------------------------
+   --
+   c_pgm_nam CONSTANT nwt_o.d_trn.pgm_nam := 'dl_pid_img_trn';
+   --
+   /* ----------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas LOCALES
+   */ ----------------------------------------------------
+   --
+   /* --------------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas del PACKAGE
+   */ --------------------------------------------------------
+   --
+   /* -----------------------------------------------------
+   || f_inl_s :
+   ||
+   || Inicializa
+   */ -----------------------------------------------------
+   --
+   FUNCTION f_inl_s
+   RETURN nwt_o.o_pid_img_s
+   IS
+   --
+   lv_o_pid_img_s nwt_o.o_pid_img_s;
+   BEGIN
+     --
+     --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+     --@                           pm_mth_nam => 'f_inl_s');
+     --@
+     --
+     lv_o_pid_img_s := NEW nwt_o.o_pid_img_s();
+     --
+     --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam,
+     --@                          pm_mth_nam => 'f_inl_s');
+     --
+     return lv_o_pid_img_s;
+     --
+   END f_inl_s;
+   --
+   /* -----------------------------------------------------
+   || f_inl_p :
+   ||
+   || Inicializa
+   */ -----------------------------------------------------
+   --
+   FUNCTION f_inl_p
+   RETURN nwt_o.o_pid_img_p
+   IS
+   --
+   lv_o_pid_img_p nwt_o.o_pid_img_p;
+   BEGIN
+     --
+     --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+     --@                           pm_mth_nam => 'f_inl_p');
+     --@
+     --
+     lv_o_pid_img_p := NEW nwt_o.o_pid_img_p();
+     --
+     --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam,
+     --@                          pm_mth_nam => 'f_inl_p');
+     --
+     return lv_o_pid_img_p;
+     --
+   END f_inl_p;
+   --
+   /* -----------------------------------------------------
+   || f_inl_pt :
+   ||
+   || Inicializa
+   */ -----------------------------------------------------
+   --
+   FUNCTION f_inl_pt
+   RETURN nwt_o.o_pid_img_pt
+   IS
+   --
+   lv_o_pid_img_pt nwt_o.o_pid_img_pt;
+   BEGIN
+     --
+     --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+     --@                           pm_mth_nam => 'f_inl_pt');
+     --@
+     --
+     lv_o_pid_img_pt := NEW nwt_o.o_pid_img_pt();
+     --
+     --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam,
+     --@                          pm_mth_nam => 'f_inl_pt');
+     --
+     return lv_o_pid_img_pt;
+     --
+   END f_inl_pt;
+   --
+   /* -----------------------------------------------------
+   || f_add :
+   ||
+   || Aniade el objeto campos simple a la tabla
+   */ -----------------------------------------------------
+   --
+   FUNCTION f_add(pm_o_pid_img_p  IN OUT NOCOPY nwt_o.o_pid_img_p ,
+                   pm_o_pid_img_pt IN OUT NOCOPY nwt_o.o_pid_img_pt)
+   RETURN nwt_o.o_pid_img_pt
+   IS
+   --
+   BEGIN
+     --
+     --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+     --@                           pm_mth_nam => 'f_add');
+     --@
+     --
+     pm_o_pid_img_pt.extend;
+     pm_o_pid_img_pt(pm_o_pid_img_pt.last) := pm_o_pid_img_p;
+     --
+     --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam,
+     --@                          pm_mth_nam => 'f_add');
+     --
+     return pm_o_pid_img_pt;
+     --
+   END f_add;
+   --
+   /* -----------------------------------------------------
+   || p_get : ISD-218 - CONSULTAR imagen
+   || OHERRERA
+   || Obtener la informacion de la definicion de la imagen
+   ||
+   || ----- Parametros de entrada
+   || compania,
+   || identificador_marco
+   || fecha_imagen
+   || idioma
+   || ----- Parametros de salida
+   || imagen
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_get(pm_cmp_val             IN                nwt_o.d_pid.cmp_val        ,
+                   pm_fra_idn_val         IN                nwt_o.d_pid.fra_idn_val    ,
+                   pm_crt_dat             IN                nwt_o.d_pid.crt_dat        ,
+                   pm_lng_val             IN                nwt_o.d_cmn.lng_val        ,
+                   pm_o_pid_img_p         IN OUT NOCOPY     nwt_o.o_pid_img_p          )
+   IS
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam  ,
+      --@                           pm_mth_nam => 'p_get_001');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_fra_idn_val',
+      --@                       pm_prm_val => pm_fra_idn_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_crt_dat',
+      --@                       pm_prm_val => pm_crt_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --
+      dl_xbackground.p_get(pm_cmp_val      => pm_cmp_val     ,
+                           pm_fra_idn_val  => pm_fra_idn_val ,
+                           pm_crt_dat      => pm_crt_dat     ,
+                           pm_lng_val      => pm_lng_val     ,
+                           pm_o_pid_img_p  => pm_o_pid_img_p );
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam  ,
+      --@                          pm_mth_nam => 'p_get');
+      --
+   END p_get;
+   --
+   /* -----------------------------------------------------
+   || p_get_001 : ISD-215 - CONSULTAR imagen bloqueando por compania sin espera
+   || FJMORENO
+   || Recuperar la informacion de la reserva de la imagen por compania. Esta informacion
+   || nos permite saber en funcion de si existe el registro, si existe bloqueo de
+   || la tabla para esa compania
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_get_001( pm_cmp_val         IN             nwt_o.d_pid.cmp_val ,
+                        pm_lng_val         IN             nwt_o.d_cmn.lng_val ,
+                        pm_o_pid_img_p     IN OUT NOCOPY  nwt_o.o_pid_img_p   )
+   IS
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam  ,
+      --@                           pm_mth_nam => 'p_get_001');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --
+      dl_xbackground.p_get_001(pm_cmp_val      => pm_cmp_val     ,
+                               pm_lng_val      => pm_lng_val     ,
+                               pm_o_pid_img_p  => pm_o_pid_img_p );
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam  ,
+      --@                          pm_mth_nam => 'p_get_001');
+      --
+   END p_get_001;
+   --
+   /* -----------------------------------------------------
+   || p_get_002 : ISD-624 - CONSULTAR imagen bloqueando por identificador marco sin espera
+   || FJMORENO
+   || Recuperar la informacion de la reserva de la imagen por identificador marco.
+   || Esta informacion nos permite saber en funcion de si existe el registro, si
+   || existe bloqueo para el registro de ese identificador marco
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_get_002( pm_cmp_val         IN             nwt_o.d_pid.cmp_val     ,
+                        pm_fra_idn_val     IN             nwt_o.d_pid.fra_idn_val ,
+                        pm_lng_val         IN             nwt_o.d_cmn.lng_val     ,
+                        pm_o_pid_img_p     IN OUT NOCOPY  nwt_o.o_pid_img_p       )
+   IS
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam  ,
+      --@                           pm_mth_nam => 'p_get_002');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_fra_idn_val',
+      --@                       pm_prm_val => pm_fra_idn_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --
+      dl_xbackground.p_get_002(pm_cmp_val      => pm_cmp_val     ,
+                               pm_fra_idn_val  => pm_fra_idn_val ,
+                               pm_lng_val      => pm_lng_val     ,
+                               pm_o_pid_img_p  => pm_o_pid_img_p );
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam  ,
+      --@                          pm_mth_nam => 'p_get_002');
+      --
+   END p_get_002;
+   --
+   /* -----------------------------------------------------
+   || p_get_003 : ISD-213 - CONSULTAR imagen por identificador marco
+   || FJMORENO
+   || Obtener la informaci�n de la definicion de la imagen por el identificador
+   || marco que viene por parimetro
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_get_003( pm_cmp_val         IN             nwt_o.d_pid.cmp_val     ,
+                        pm_fra_idn_val     IN             nwt_o.d_pid.fra_idn_val ,
+                        pm_lng_val         IN             nwt_o.d_cmn.lng_val     ,
+                        pm_o_pid_img_p     IN OUT NOCOPY  nwt_o.o_pid_img_p       )
+   IS
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam  ,
+      --@                           pm_mth_nam => 'p_get_003');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_fra_idn_val',
+      --@                       pm_prm_val => pm_fra_idn_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --
+      dl_xbackground.p_get_003(pm_cmp_val      => pm_cmp_val     ,
+                               pm_fra_idn_val  => pm_fra_idn_val ,
+                               pm_lng_val      => pm_lng_val     ,
+                               pm_o_pid_img_p  => pm_o_pid_img_p );
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam  ,
+      --@                          pm_mth_nam => 'p_get_003');
+      --
+   END p_get_003;
+   --
+   /* -----------------------------------------------------
+   || p_dlt : ISD-628 - BORRAR imagen, por identificador marco
+   || FJMORENO
+   || Borra la informacion de la imagen, accediendo por compania e identificador marco
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_dlt( pm_cmp_val         IN             nwt_o.d_pid.cmp_val     ,
+                    pm_fra_idn_val     IN             nwt_o.d_pid.fra_idn_val ,
+                    pm_lng_val         IN             nwt_o.d_cmn.lng_val     )
+   IS
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+      --@                           pm_mth_nam => 'p_dlt'  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_fra_idn_val',
+      --@                       pm_prm_val => pm_fra_idn_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --
+      dl_xbackground.p_dlt(pm_cmp_val      => pm_cmp_val     ,
+                           pm_fra_idn_val  => pm_fra_idn_val ,
+                           pm_lng_val      => pm_lng_val     );
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam,
+      --@                          pm_mth_nam => 'p_dlt'  );
+      --
+   END p_dlt;
+   --
+   /* -----------------------------------------------------
+   || p_inr : ISD-631 - TRASPASAR imagen a trabajo
+   || OHERRERA
+   || Hacer que persistan las propiedades de la definicion de la imagen en las tablas de trabajo
+   ||
+   || ----- Parametros de entrada
+   || imagen
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_inr(pm_lng_val         IN                nwt_o.d_cmn.lng_val  ,
+                   pm_o_pid_img_p     IN OUT NOCOPY     nwt_o.o_pid_img_p    )
+   IS
+      --
+      BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam  ,
+      --@                           pm_mth_nam => 'p_inr');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --
+      dl_xbackground.p_inr(pm_lng_val        =>    pm_lng_val     ,
+                           pm_o_pid_img_p    =>    pm_o_pid_img_p );
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam  ,
+      --@                          pm_mth_nam => 'p_inr');
+      --
+   END p_inr;
+   --
+END dl_pid_img_trn;
+/

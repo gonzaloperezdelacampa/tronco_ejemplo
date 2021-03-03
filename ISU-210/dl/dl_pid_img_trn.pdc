@@ -1,0 +1,19 @@
+CONNECT NWT_DL;
+-- Permisos
+--
+GRANT EXECUTE ON nwt_dl.dl_pid_img_trn
+              TO nwt_bl;
+--
+GRANT EXECUTE ON nwt_dl.dl_pid_img_trn
+              TO nwt_sr;
+--
+-- Sinonimos
+--
+CREATE OR REPLACE SYNONYM nwt_dl.dl_pid_img
+                      FOR nwt_dl.dl_pid_img_trn;
+--
+CREATE OR REPLACE SYNONYM nwt_bl.dl_pid_img
+                      FOR nwt_dl.dl_pid_img_trn;
+--
+CREATE OR REPLACE SYNONYM nwt_sr.dl_pid_img
+                      FOR nwt_dl.dl_pid_img_trn;

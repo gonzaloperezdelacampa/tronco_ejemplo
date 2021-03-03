@@ -1,0 +1,168 @@
+CREATE OR REPLACE PACKAGE BODY nwt_sr.op_pid_img_pss_can_trn
+AS
+   --
+   /* -------------------- DESCRIPCION --------------------
+   || Logica de servicios del concepto logico IMAGEN
+   || de la familia DEFINICION POLIZA
+   */ -----------------------------------------------------
+   --
+   /* -------------------- VERSION = 1.00 -------------------- */
+   --
+   /* -------------------- MODIFICACIONES -----------------
+   || 2016/04/05 - SISAZA - v 1.00
+   || Creacion
+   */ -----------------------------------------------------
+   --
+   /* --------------------------------------------------
+   || Aqui comienza la declaracion de variables GLOBALES
+   */ --------------------------------------------------
+   --
+   /* -------------------------------------------------
+   || Aqui comienza la declaracion de cursores GLOBALES
+   */ -------------------------------------------------
+   --
+   /* ---------------------------------------------------
+   || Aqui comienza la declaracion de constantes GLOBALES
+   */ ---------------------------------------------------
+   --
+   c_pgm_nam CONSTANT nwt_o.d_trn.pgm_nam := 'op_pid_img_pss_can_trn';
+   --
+   /* ----------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas LOCALES
+   */ ----------------------------------------------------
+   --
+   /* --------------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas del PACKAGE
+   */ --------------------------------------------------------
+   --
+   /* -----------------------------------------------------
+   || p_chc_rev_all_och : ISD-2713 - TRATAR imagen, marca
+   ||                                devuelve todo,
+   ||                                anulacion,
+   ||                                orquestacion
+   ||
+   || SISAZA
+   ||
+   || Ofrecer el servicio de creacion de la imagen en un
+   || movimiento de anulacion.
+   || Tambien crear la variable global recibida por
+   || parametro y le asigna el valor recibido.
+   || Para este proceso de anulacion, se recibe la "marca
+   || devuelve todo "necesaria en el proceso de anulacion
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_chc_rev_all_och (pm_cmp_val         IN            nwt_o.d_cmu.cmp_val        ,
+                                pm_lob_val         IN            nwt_o.d_prt.lob_val        ,
+                                pm_del_val         IN            nwt_o.d_prt.del_val        ,
+                                pm_sbl_val         IN            nwt_o.d_prt.sbl_val        ,
+                                pm_enr_typ_val     IN            nwt_o.d_trn.enr_typ_val    ,
+                                pm_img_gnr_typ_val IN            nwt_o.d_trn.img_gnr_typ_val,
+                                pm_ply_efc_dat     IN            nwt_o.d_trn.ply_efc_dat    ,
+                                pm_o_trn_cnx_s     IN OUT NOCOPY nwt_o.o_trn_cnx_s          ,
+                                pm_vrb_nam         IN            nwt_o.d_trn.fld_nam        ,
+                                pm_vrb_val         IN            nwt_o.d_trn.fld_chr        ,
+                                pm_o_pid_img_p     IN OUT NOCOPY nwt_o.o_pid_img_p          )
+   IS
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam          ,
+      --@                           pm_mth_nam => 'p_chc_rev_all_och');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lob_val',
+      --@                       pm_prm_val => pm_lob_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_del_val',
+      --@                       pm_prm_val => pm_del_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_sbl_val',
+      --@                       pm_prm_val => pm_sbl_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_enr_typ_val',
+      --@                       pm_prm_val => pm_enr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam           ,
+      --@                       pm_prm_nam => 'pm_img_gnr_typ_val',
+      --@                       pm_prm_val => pm_img_gnr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_ply_efc_dat',
+      --@                       pm_prm_val => pm_ply_efc_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_vrb_nam',
+      --@                       pm_prm_val => pm_vrb_nam  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_vrb_val',
+      --@                       pm_prm_val => pm_vrb_val  );
+      --@
+      --
+      BEGIN
+         --
+         -- 10.CREAR variable (NFU-15)
+         dl_trn_vrb.p_set (pm_vrb_nam => pm_vrb_nam,
+                           pm_vrb_val => pm_vrb_val);
+         --
+         -- 20. CREAR imagen completo (ISD-210)
+         op_pid_img_crt.p_sav (pm_cmp_val         => pm_cmp_val            ,
+                               pm_lob_val         => pm_lob_val            ,
+                               pm_del_val         => pm_del_val            ,
+                               pm_sbl_val         => pm_sbl_val            ,
+                               pm_enr_typ_val     => pm_enr_typ_val        ,
+                               pm_img_gnr_typ_val => pm_img_gnr_typ_val    ,
+                               pm_enr_efc_dat     => pm_ply_efc_dat        ,
+                               pm_ply_efc_dat     => pm_ply_efc_dat        ,
+                               pm_ses_val         => pm_o_trn_cnx_s.ses_val,
+                               pm_lng_val         => pm_o_trn_cnx_s.lng_val,
+                               pm_usr_val         => pm_o_trn_cnx_s.usr_val,
+                               pm_o_pid_img_p     => pm_o_pid_img_p        );
+         --
+      EXCEPTION
+         --
+         WHEN nwt_o.e_trn.ERR
+         THEN
+            --
+            NULL;
+            --
+         WHEN OTHERS
+         THEN
+            --
+            IF pm_o_pid_img_p IS NULL
+            THEN
+               --
+               pm_o_pid_img_p := dl_pid_img.f_inl_p;
+               --
+            END IF;
+            --
+            -- APILAR error (NFU-42)
+            dl_trn_err.p_add (pm_err_val     => SQLCODE                           ,
+                              pm_err_nam     => SQLERRM                           ,
+                              pm_o_trn_err_t => pm_o_pid_img_p.trn_prc_s.trn_err_t);
+            --
+            dl_trn_dbg.p_set_err (pm_pgm_nam => c_pgm_nam);
+            --
+         --
+      END;
+      --
+      pm_o_pid_img_p.trn_prc_s.prc_trm_val := bl_trn_cmn.f_trm(pm_cnr_err => pm_o_pid_img_p.trn_prc_s.trn_err_t.COUNT);
+      --
+      dl_trn_err.p_chc(pm_tem_val => pm_o_pid_img_p.trn_prc_s.prc_trm_val,
+                       pm_lng_val => pm_o_trn_cnx_s.lng_val              );
+      --
+      --
+      --@ dl_trn_dbg.p_set_mth_trm (pm_pgm_nam => c_pgm_nam          ,
+      --@                           pm_mth_nam => 'p_chc_rev_all_och');
+      --
+   END p_chc_rev_all_och;
+   --
+END op_pid_img_pss_can_trn;
+/

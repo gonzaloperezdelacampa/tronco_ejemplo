@@ -1,0 +1,604 @@
+CREATE OR REPLACE PACKAGE BODY NWT_SR.op_pid_img_crt_trn
+AS
+   --
+   /* -------------------- DESCRIPCION --------------------
+   || Logica de servicios del concepto logico IMAGEN
+   || de la familia DEFINICION POLIZA
+   */ -----------------------------------------------------
+   --
+   /* -------------------- VERSION = 1.00 -------------------- */
+   --
+   /* -------------------- MODIFICACIONES -----------------
+   || 2013/05/22 - MRGOMEZ - v 1.00
+   || Creacion
+   */ -----------------------------------------------------
+   --
+   /* --------------------------------------------------
+   || Aqui comienza la declaracion de variables GLOBALES
+   */ --------------------------------------------------
+   --
+   /* -------------------------------------------------
+   || Aqui comienza la declaracion de cursores GLOBALES
+   */ -------------------------------------------------
+   --
+   /* ---------------------------------------------------
+   || Aqui comienza la declaracion de constantes GLOBALES
+   */ ---------------------------------------------------
+   --
+   c_pgm_nam CONSTANT nwt_o.d_trn.pgm_nam := 'op_pid_img_crt_trn';
+   --
+   /* ----------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas LOCALES
+   */ ----------------------------------------------------
+   --
+   /* --------------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas del PACKAGE
+   */ --------------------------------------------------------
+   --
+   /* -----------------------------------------------------
+   || p_sav: ISD-210 - CREAR imagen completo
+   ||
+   || MRGOMEZ
+   ||
+   || Se van a registrar los datos de la definicion de la
+   || imagen del ramo, asi como de la definicion de
+   || agravantes, atributos, coberturas y desgloses.
+   || Actuara del siguiente modo:
+   || - Se obtienen los atributos de la imagen
+   || - Se consultan las propiedades de la imagen, entrando
+   ||   por identificador marco
+   || - Si no existen datos de esa imagen para el
+   ||   identificador marco, se intentara bloquear la tabla
+   ||   de imagenes
+   ||   * Si no lo consigue (existe bloqueo), volvera a
+   ||     consultar la imagen y mientras que no tenga
+   ||     datos, seguira intentando bloquear la tabla hasta
+   ||     que ya no este bloqueada.
+   ||   * Si lo consigue, se registrara en la imagen y se
+   ||     desbloqueara el concepto logico bloqueado
+   ||     anteriormente.
+   ||
+   || - Una vez existan datos, se vuelve a consultar las
+   ||   propiedades de la imagen por identificador marco y
+   ||   fecha imagen
+   || - Si no existen datos de esa imagen para el
+   ||   identificador marco y la fecha imagen, se intentara
+   ||   bloquear la imagen para el identificador marco
+   ||   * Si no lo consigue (existe bloqueo), volvera a
+   ||     consultar la imagen y mientras que no tenga
+   ||     datos, seguira intentando bloquear la tabla hasta
+   ||     que ya no este bloqueada.
+   ||   * Si lo consigue:
+   ||     + Borra la imagen para el identificador marco
+   ||     + Crea la imagen completa de la definicion de
+   ||       atributo (distinguiendo por niveles)
+   ||     + Crea la imagen completa de la definicion de
+   ||       cobertura (tratando dentro tanto la definicion
+   ||       de desglose como la definicion de agravante)
+   ||     + Se registrara en la imagen y se desbloqueara el
+   ||       concepto logico bloqueado anteriormente.
+   ||
+   || - En caso de producirse algun error, se apilara en
+   ||   error proceso, se aade al error proceso conjunto
+   ||   de la imagen y se devuelve el error 20123
+   ||   (e_trn.ERR), para que el orquestador superior
+   ||   lo sepa.
+   ||
+   || NOTA de implementacion:
+   || - Despues de traspasar los datos de la imagen
+   ||   (ISD-631), se realiza un COMMIT que confirma la
+   ||   grabacion, tanto en la XBACKGROUND (primera llamada
+   ||   al requisito) como en las tablas de trabajo de la
+   ||   definicion de cada concepto logico y la propia
+   ||   XBACKGROUND (segunda llamada al requisito)
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_sav (pm_cmp_val         IN            nwt_o.d_cmu.cmp_val        ,
+                    pm_lob_val         IN            nwt_o.d_prt.lob_val        ,
+                    pm_del_val         IN            nwt_o.d_prt.del_val        ,
+                    pm_sbl_val         IN            nwt_o.d_prt.sbl_val        ,
+                    pm_enr_typ_val     IN            nwt_o.d_trn.enr_typ_val    ,
+                    pm_img_gnr_typ_val IN            nwt_o.d_trn.img_gnr_typ_val,
+                    pm_enr_efc_dat     IN            nwt_o.d_trn.enr_efc_dat    ,
+                    pm_ply_efc_dat     IN            nwt_o.d_trn.ply_efc_dat    ,
+                    pm_ses_val         IN            nwt_o.d_trn.ses_val        ,
+                    pm_lng_val         IN            nwt_o.d_cmn.lng_val        ,
+                    pm_usr_val         IN            nwt_o.d_thp.usr_val        ,
+                    pm_o_pid_img_p     IN OUT NOCOPY nwt_o.o_pid_img_p          )
+   IS
+      --
+      lv_o_pid_img_prr_p nwt_o.o_pid_img_p  ;
+      lv_o_trn_err_t     nwt_o.o_trn_err_t  ;
+      lv_o_pid_cgd_p     nwt_o.o_pid_cgd_p  ;
+      lv_o_prt_del_p     nwt_o.o_prt_del_p  ;
+      lv_o_prt_sbl_p     nwt_o.o_prt_sbl_p  ;
+      lv_o_pid_img_fra_p nwt_o.o_pid_img_p  ;
+      lv_o_ard_ard_p     nwt_o.o_ard_ard_p  ;
+      --
+      lv_sindatos        nwt_o.d_trn.bol    ;
+      lv_existebloqueo   nwt_o.d_trn.bol    ;
+      lv_fechadia        nwt_o.d_trn.fld_dat;
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+      --@                           pm_mth_nam => 'p_sav'  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lob_val',
+      --@                       pm_prm_val => pm_lob_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_del_val',
+      --@                       pm_prm_val => pm_del_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_sbl_val',
+      --@                       pm_prm_val => pm_sbl_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_enr_typ_val',
+      --@                       pm_prm_val => pm_enr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam           ,
+      --@                       pm_prm_nam => 'pm_img_gnr_typ_val',
+      --@                       pm_prm_val => pm_img_gnr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_enr_efc_dat',
+      --@                       pm_prm_val => pm_enr_efc_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_ply_efc_dat',
+      --@                       pm_prm_val => pm_ply_efc_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_ses_val',
+      --@                       pm_prm_val => pm_ses_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_usr_val',
+      --@                       pm_prm_val => pm_usr_val  );
+      --@
+      --
+      BEGIN
+         --
+         -- 1. Crear el objeto imagen vacio
+         pm_o_pid_img_p     := dl_pid_img.f_inl_p;
+         --
+         --    Crear el objeto imagen anterior vacio
+         lv_o_pid_img_prr_p := dl_pid_img.f_inl_p;
+         --
+         --    Crear error proceso vacio
+         dl_trn_err.p_inl (pm_o_trn_err_t => lv_o_trn_err_t);
+         --
+         -- 2. imagen.compaia toma el valor de compaia
+         pm_o_pid_img_p.pid_img_s.cmp_val := pm_cmp_val;
+         --
+         -- 3. HALLAR imagen fecha acceso definicion (ISD-255)
+         bl_pid_img_cue.p_acs_dfn_dat (pm_img_gnr_typ_val => pm_img_gnr_typ_val                  ,
+                                       pm_enr_efc_dat     => pm_enr_efc_dat                      ,
+                                       pm_ply_efc_dat     => pm_ply_efc_dat                      ,
+                                       pm_acs_dfn_dat     => pm_o_pid_img_p.pid_img_s.acs_dfn_dat);
+         --
+         -- 4. CONSULTAR cobertura definicion por fecha validez maxima (<=) (ISD-211)
+         dl_pid_cgd.p_get_014 (pm_cmp_val     => pm_cmp_val                          ,
+                               pm_lob_val     => pm_lob_val                          ,
+                               pm_lob_vld_dat => pm_o_pid_img_p.pid_img_s.acs_dfn_dat,
+                               pm_lng_val     => pm_lng_val                          ,
+                               pm_o_pid_cgd_p => lv_o_pid_cgd_p                      );
+         --
+         -- 5. imagen.fecha validez ramo toma el valor fecha validez ramo
+         pm_o_pid_img_p.pid_img_s.vld_dat := lv_o_pid_cgd_p.pid_cgd_s.vld_dat;
+         --
+         -- 6. HALLAR imagen identificador marco (ISD-212)
+         bl_pid_img_cue.p_fra_idn_val (pm_lob_val         => pm_lob_val                          ,
+                                       pm_enr_typ_val     => pm_enr_typ_val                      ,
+                                       pm_img_gnr_typ_val => pm_img_gnr_typ_val                  ,
+                                       pm_vld_dat         => pm_o_pid_img_p.pid_img_s.vld_dat    ,
+                                       pm_lng_val         => pm_lng_val                          ,
+                                       pm_fra_idn_val     => pm_o_pid_img_p.pid_img_s.fra_idn_val);
+         --
+         --
+         -- 6.01 CREAR variable (NFU-15) Usando: 'cod_marco', imagen.identificador marco
+          dl_trn_vrb.p_set (pm_vrb_nam => 'cod_marco'                     ,
+                            pm_vrb_val => pm_o_pid_img_p.pid_img_s.fra_idn_val);
+         --
+         -- 7. Si formacion imagen es 'fecha del dia' (c_pid.tng_img_dat_day)
+         IF pm_img_gnr_typ_val = nwt_o.c_pid.tng_img_dat_day
+         THEN
+            --
+            -- 8. imagen.fecha imagen toma el valor de la Fecha del Dia
+            -- pm_o_pid_img_p.pid_img_s.crt_dat := dl_trn_cmn.f_get_mdf_dat;
+            pm_o_pid_img_p.pid_img_s.crt_dat := trunc(SYSDATE);
+            --
+         -- 9. Si no [7]
+         ELSE
+            --
+            -- 10. imagen.fecha imagen toma el valor imagen.fecha validez ramo
+            pm_o_pid_img_p.pid_img_s.crt_dat := pm_o_pid_img_p.pid_img_s.vld_dat;
+            --
+         -- 11. Fin si [7]
+         END IF;
+         --
+         -- 12. Si acuerdo tiene valor
+         IF pm_del_val IS NOT NULL
+         THEN
+            --
+            BEGIN
+               --
+               -- 13. CONSULTAR acuerdo a fecha (<=) (CMN-565)
+               dl_prt_del.p_get_001 (pm_cmp_val         => pm_cmp_val                          ,
+                                     pm_lob_val         => pm_lob_val                          ,
+                                     pm_del_val         => pm_del_val                          ,
+                                     pm_vld_dat         => pm_o_pid_img_p.pid_img_s.acs_dfn_dat,
+                                     pm_lng_val         => pm_lng_val                          ,
+                                     pm_get_nam_typ_val => nwt_o.c_trn.get_nam_nne             ,
+                                     pm_o_prt_del_p     => lv_o_prt_del_p                      );
+               --
+               pm_o_pid_img_p.pid_img_s.del_vld_dat := lv_o_prt_del_p.prt_del_s.vld_dat;
+               --
+               -- 14. Si subacuerdo tiene valor
+               IF pm_sbl_val IS NOT NULL
+               THEN
+                  --
+                  BEGIN
+                     --
+                     -- 15. CONSULTAR subacuerdo a fecha (<=) (CMN-569)
+                     dl_prt_sbl.p_get (pm_cmp_val         => pm_cmp_val                          ,
+                                       pm_lob_val         => pm_lob_val                          ,
+                                       pm_del_val         => pm_del_val                          ,
+                                       pm_sbl_val         => pm_sbl_val                          ,
+                                       pm_vld_dat         => pm_o_pid_img_p.pid_img_s.acs_dfn_dat,
+                                       pm_get_nam_typ_val => nwt_o.c_trn.get_nam_nne             ,
+                                       pm_lng_val         => pm_lng_val                          ,
+                                       pm_o_prt_sbl_p     => lv_o_prt_sbl_p                      );
+                     --
+                     pm_o_pid_img_p.pid_img_s.sbl_vld_dat := lv_o_prt_sbl_p.prt_sbl_s.sbl_vld_dat;
+                     --
+                  EXCEPTION
+                     --
+                     -- Si "sin datos" (e_trn. NOT_EXS)
+                     WHEN nwt_o.e_trn.NOT_EXS
+                     THEN
+                        --
+                        -- Ir a 18
+                        NULL;
+                        --
+                     --
+                  END;
+                  --
+               -- 16. Fin si [14]
+               END IF;
+               --
+            EXCEPTION
+               --
+               -- Si "sin datos" (e_trn. NOT_EXS)
+               WHEN nwt_o.e_trn.NOT_EXS
+               THEN
+                  --
+                  -- Ir a 18
+                  NULL;
+                  --
+               --
+            END;
+            --
+         -- 17. Fin si [12]
+         END IF;
+         --
+         BEGIN
+            --
+            lv_sindatos := nwt_o.c_trn.bol_fls;
+            --
+            -- 18. CONSULTAR imagen por identificador marco (ISD-213)
+            dl_pid_img.p_get_003 (pm_cmp_val     => pm_cmp_val                          ,
+                                  pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                  pm_lng_val     => pm_lng_val                          ,
+                                  pm_o_pid_img_p => lv_o_pid_img_fra_p                  );
+            --
+         EXCEPTION
+            --
+            WHEN nwt_o.e_trn.NOT_EXS
+            THEN
+               --
+               lv_sindatos := nwt_o.c_trn.bol_tru;
+               --
+            --
+         END;
+         --
+         -- 19. Mientras "sin datos" (e_trn.NOT_EXS)
+         WHILE lv_sindatos
+         LOOP
+            --
+            lv_existebloqueo := nwt_o.c_trn.bol_fls;
+            --
+            BEGIN
+               --
+               -- 20. BLOQUEAR imagen por compaa (ISD-214)
+               bl_pid_img.p_lck (pm_cmp_val     => pm_cmp_val                          ,
+                                 pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                 pm_lng_val     => pm_lng_val                          ,
+                                 pm_ses_val     => pm_ses_val                          ,
+                                 pm_usr_val     => pm_usr_val                          );
+               --
+            EXCEPTION
+               --
+               WHEN nwt_o.e_trn.LCK
+               THEN
+                  --
+                  lv_existebloqueo := nwt_o.c_trn.bol_tru;
+                  --
+               --
+            END;
+            --
+            -- 21. Si "existe bloqueo" (e_trn.LCK)
+            IF lv_existebloqueo = nwt_o.c_trn.bol_tru
+            THEN
+               --
+               lv_sindatos := nwt_o.c_trn.bol_fls;
+               --
+               BEGIN
+                  --
+                  -- 22. CONSULTAR imagen (ISD-213)
+                  dl_pid_img.p_get_003 (pm_cmp_val     => pm_cmp_val                          ,
+                                        pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                        pm_lng_val     => pm_lng_val                          ,
+                                        pm_o_pid_img_p => lv_o_pid_img_fra_p                  );
+                  --
+               EXCEPTION
+                  --
+                  WHEN nwt_o.e_trn.NOT_EXS
+                  THEN
+                     --
+                     lv_sindatos := nwt_o.c_trn.bol_tru;
+                     --
+                  --
+               END;
+               --
+            -- 23. Si no [21]
+            ELSE
+               --
+               -- 24. HALLAR fecha actualizacion (NFU-50)
+               lv_fechadia := dl_trn_cmn.f_get_mdf_dat;
+               --
+               -- 25. imagen anterior.compaia toma el valor de imagen.compaia
+               lv_o_pid_img_prr_p.pid_img_s.cmp_val     := pm_o_pid_img_p.pid_img_s.cmp_val    ;
+               --
+               --     imagen anterior.identificador marco toma el valor de imagen.identificador marco
+               lv_o_pid_img_prr_p.pid_img_s.fra_idn_val := pm_o_pid_img_p.pid_img_s.fra_idn_val;
+               --
+               --     imagen anterior.fecha imagen toma el valor de: fecha del dia restandole un dia
+               lv_o_pid_img_prr_p.pid_img_s.crt_dat     := lv_fechadia - 1                     ;
+               --
+               -- 26. TRASPASAR imagen a trabajo (ISD-631)
+               dl_pid_img.p_inr (pm_lng_val     => pm_lng_val        ,
+                                 pm_o_pid_img_p => lv_o_pid_img_prr_p);
+               --
+               -- 27. // COMMIT; GRABAR la transaccion
+               COMMIT;
+               --
+               -- 28. DESBLOQUEAR imagen (ISD-217)
+               bl_pid_img.p_unl (pm_cmp_val     => pm_cmp_val                          ,
+                                 pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                 pm_lng_val     => pm_lng_val                          ,
+                                 pm_ses_val     => pm_ses_val                          ,
+                                 pm_usr_val     => pm_usr_val                          );
+               --
+            -- 29. Fin si [21]
+            END IF;
+            --
+            BEGIN
+               --
+               lv_sindatos := nwt_o.c_trn.bol_fls;
+               --
+               -- 18. CONSULTAR imagen por identificador marco (ISD-213)
+               dl_pid_img.p_get_003 (pm_cmp_val     => pm_cmp_val                          ,
+                                     pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                     pm_lng_val     => pm_lng_val                          ,
+                                     pm_o_pid_img_p => lv_o_pid_img_fra_p                  );
+               --
+            EXCEPTION
+               --
+               WHEN nwt_o.e_trn.NOT_EXS
+               THEN
+                  --
+                  lv_sindatos := nwt_o.c_trn.bol_tru;
+                  --
+               --
+            END;
+            --
+         -- 30. Fin mientras [19]
+         END LOOP;
+         --
+         BEGIN
+            --
+            lv_sindatos := nwt_o.c_trn.bol_fls;
+            --              
+            -- 31. CONSULTAR imagen (ISD-218)
+            dl_pid_img.p_get (pm_cmp_val     => pm_cmp_val                          ,
+                              pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                              pm_crt_dat     => pm_o_pid_img_p.pid_img_s.crt_dat    ,
+                              pm_lng_val     => pm_lng_val                          ,
+                              pm_o_pid_img_p => lv_o_pid_img_fra_p                  );
+            --
+         EXCEPTION
+            --
+            WHEN nwt_o.e_trn.NOT_EXS
+            THEN
+               --
+               lv_sindatos := nwt_o.c_trn.bol_tru;
+               --
+            --
+         END;
+         --
+         -- 32. Mientras "sin datos" (e_trn.NOT_EXS)
+         WHILE lv_sindatos
+         LOOP
+            --
+            lv_existebloqueo := nwt_o.c_trn.bol_fls;
+            --
+            BEGIN
+               --
+               -- 33. BLOQUEAR imagen por identificador marco (ISD-623)
+               bl_pid_img.p_lck_001(pm_cmp_val     => pm_cmp_val,
+                                    pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                    pm_lng_val     => pm_lng_val,
+                                    pm_ses_val     => pm_ses_val,
+                                    pm_usr_val     => pm_usr_val);
+               --
+            EXCEPTION
+               --
+               WHEN nwt_o.e_trn.LCK
+               THEN
+                  --
+                  lv_existebloqueo := nwt_o.c_trn.bol_tru;
+                  --
+               --
+            END;
+            --
+            -- 34. Si 'Existe bloqueo' (e_trn.LCK)
+            IF lv_existebloqueo = nwt_o.c_trn.bol_tru
+            THEN
+               --
+               BEGIN
+                  --
+                  lv_sindatos := nwt_o.c_trn.bol_fls;
+                  --
+                  -- 35. CONSULTAR imagen fecha (=) (ISD-218)
+                  dl_pid_img.p_get (pm_cmp_val     => pm_cmp_val                          ,
+                                    pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                    pm_crt_dat     => pm_o_pid_img_p.pid_img_s.crt_dat    ,
+                                    pm_lng_val     => pm_lng_val                          ,
+                                    pm_o_pid_img_p => lv_o_pid_img_fra_p                  );
+                  --
+               EXCEPTION
+                  --
+                  WHEN nwt_o.e_trn.NOT_EXS
+                  THEN
+                     --
+                     lv_sindatos := nwt_o.c_trn.bol_tru;
+                     --
+                  --
+               END;
+               --
+            -- 36. Si no [34]
+            ELSE
+               --
+               -- 37. ELIMINAR poliza definicion, imagen completo, trabajo, por identificador marco (ISD-630)
+               pr_pid_pid_img_rme.p_wrk_fra_idn_cpe (pm_cmp_val     => pm_cmp_val                          ,
+                                                     pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                                     pm_lng_val     => pm_lng_val                          );
+               --
+               dl_ard_ard.p_inl (pm_o_ard_ard_p => lv_o_ard_ard_p);
+               --
+               lv_o_ard_ard_p.ard_ard_s.cmp_val := pm_cmp_val                      ;
+               lv_o_ard_ard_p.ard_ard_s.lob_val := pm_lob_val                      ;
+               lv_o_ard_ard_p.ard_ard_s.vld_dat := pm_o_pid_img_p.pid_img_s.vld_dat;
+               --
+               -- 38. CREAR atributo definicion imagen completo (CMN-579)
+               op_ard_ard_crt.p_prc (pm_o_ard_ard_p => lv_o_ard_ard_p                      ,
+                                     pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                     pm_lng_val     => pm_lng_val                          );
+               --
+               -- 39. CREAR cobertura definicion imagen completo (ISD-250)
+               op_pid_cgd_crt.p_sav_002 (pm_cmp_val     => pm_cmp_val                          ,
+                                         pm_lob_val     => pm_lob_val                          ,
+                                         pm_lob_vld_dat => pm_o_pid_img_p.pid_img_s.vld_dat    ,
+                                         pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                         pm_lng_val     => pm_lng_val                          );
+               --
+               -- 40. TRASPASAR imagen a trabajo (ISD-631)
+               dl_pid_img.p_inr (pm_lng_val     => pm_lng_val    ,
+                                 pm_o_pid_img_p => pm_o_pid_img_p);
+               --
+               -- 41. GRABAR la transaccion
+               COMMIT;
+               --
+               -- 42. DESBLOQUEAR imagen (ISD-217)
+                bl_pid_img.p_unl (pm_cmp_val     => pm_cmp_val                          ,
+                                  pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                  pm_lng_val     => pm_lng_val                          ,
+                                  pm_ses_val     => pm_ses_val                          ,
+                                  pm_usr_val     => pm_usr_val                          );
+               --
+            -- 43. Fin si [34]
+            END IF;
+            --
+            BEGIN
+               --
+               lv_sindatos := nwt_o.c_trn.bol_fls;
+               --
+               -- 31. CONSULTAR imagen (ISD-218)
+               dl_pid_img.p_get (pm_cmp_val     => pm_cmp_val                          ,
+                                 pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                 pm_crt_dat     => pm_o_pid_img_p.pid_img_s.crt_dat    ,
+                                 pm_lng_val     => pm_lng_val                          ,
+                                 pm_o_pid_img_p => lv_o_pid_img_fra_p                  );
+               --
+            EXCEPTION
+               --
+               WHEN nwt_o.e_trn.NOT_EXS
+               THEN
+                  --
+                  lv_sindatos := nwt_o.c_trn.bol_tru;
+                  --
+               --
+            END;
+            --
+         -- 44. Fin mientras [32]
+         END LOOP;
+         --
+      EXCEPTION
+         --
+         -- 45 Si "cualquier error"
+         WHEN OTHERS
+         THEN
+            --
+            --
+            -- 46. APILAR ERROR (NFU-42) en error proceso
+            dl_trn_err.p_add(pm_err_val     => SQLCODE       ,
+                             pm_err_nam     => SQLERRM       ,
+                             pm_o_trn_err_t => lv_o_trn_err_t);
+            --
+            -- 47. Aadir error proceso a imagen.error proceso conjunto
+            pm_o_pid_img_p.trn_prc_s.trn_err_t := lv_o_trn_err_t;
+            --
+            -- 47.1    DESBLOQUEAR imagen (ISD-217)
+            BEGIN
+               bl_pid_img.p_unl (pm_cmp_val     => pm_cmp_val                          ,
+                                 pm_fra_idn_val => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                 pm_lng_val     => pm_lng_val                          ,
+                                 pm_ses_val     => pm_ses_val                          ,
+                                 pm_usr_val     => pm_usr_val                          );
+            EXCEPTION
+               -- Si "cualquier error" Siguiente paso
+               WHEN OTHERS THEN
+                  NULL;
+            END;
+            --
+            -- 48. CREAR error (NFU-61)
+            dl_trn_err.p_shw(pm_err_val     => 20123                ,
+                             pm_lng_val     => pm_lng_val           ,
+                             pm_tem_val     => NULL                 ,
+                             pm_fld_val     => NULL                 ,
+                             pm_pgm_val     => c_pgm_nam || '.p_sav');
+            --
+         --
+      -- 49. Fin si [45]
+      END;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm (pm_pgm_nam => c_pgm_nam,
+      --@                           pm_mth_nam => 'p_sav'  );
+      --
+   END p_sav;
+   --
+END op_pid_img_crt_trn;
+/

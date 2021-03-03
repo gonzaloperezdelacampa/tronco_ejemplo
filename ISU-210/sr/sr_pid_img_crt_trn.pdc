@@ -1,0 +1,16 @@
+-- Conexion al esquema
+--
+CONNECT NWT_SR;
+--
+-- Permisos
+--
+GRANT EXECUTE ON nwt_sr.sr_pid_img_crt_trn
+              TO nwt_app;
+--
+-- Sinonimos
+--
+CREATE OR REPLACE SYNONYM nwt_app.sr_pid_img_crt
+                      FOR nwt_sr.sr_pid_img_crt_trn;
+--
+CREATE OR REPLACE SYNONYM nwt_sr.sr_pid_img_crt
+                      FOR nwt_sr.sr_pid_img_crt_trn;

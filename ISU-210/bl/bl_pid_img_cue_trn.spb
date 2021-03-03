@@ -1,0 +1,167 @@
+CREATE OR REPLACE PACKAGE BODY nwt_bl.bl_pid_img_cue_trn
+AS
+   --
+   /* -------------------- DESCRIPCION --------------------
+   || Lógica de negocio que define el concepto IMAGEN
+   || Familia DEFINICION POLIZA
+   */ -----------------------------------------------------
+   --
+   /* -------------------- VERSION = 1.00 -------------------- */
+   --
+   /* -------------------- MODIFICACIONES -----------------
+   || 2013/04/08 - DAAGUDELO - v 1.00
+   || Creacion
+   */ ------------------------------------------------------
+   --
+   /* --------------------------------------------------
+   || Aqui comienza la declaracion de variables GLOBALES
+   */ --------------------------------------------------
+   --
+   /* -------------------------------------------------
+   || Aqui comienza la declaracion de cursores GLOBALES
+   */ -------------------------------------------------
+   --
+   /* ---------------------------------------------------
+   || Aqui comienza la declaracion de constantes GLOBALES
+   */ ---------------------------------------------------
+   --
+   c_pgm_nam CONSTANT nwt_o.d_trn.pgm_nam := 'bl_pid_img_cue_trn';
+   --
+   /* ----------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas LOCALES
+   */ ----------------------------------------------------
+   --
+   /* --------------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas del PACKAGE
+   */ --------------------------------------------------------
+   --
+   /* -----------------------------------------------------
+   || p_acs_dfn_dat: ISD-255 - HALLAR imagen, fecha acceso definicion
+   ||
+   || Se obtiene dentro de la definición de la imagen la
+   || fecha de acceso a la definicion.
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_acs_dfn_dat(pm_img_gnr_typ_val  IN            nwt_o.d_prt.img_gnr_typ_val,
+                           pm_enr_efc_dat      IN            nwt_o.d_ply.enr_efc_dat    ,
+                           pm_ply_efc_dat      IN            nwt_o.d_ply.ply_efc_dat    ,
+                           pm_acs_dfn_dat         OUT NOCOPY nwt_o.d_pid.acs_dfn_dat    )
+   IS
+      --
+      lv_mdf_dat nwt_o.d_cmn.mdf_dat;
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn(pm_pgm_nam => c_pgm_nam      ,
+      --@                          pm_mth_nam => 'p_acs_dfn_dat');
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam           ,
+      --@                      pm_prm_nam => 'pm_img_gnr_typ_val',
+      --@                      pm_prm_val => pm_img_gnr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam       ,
+      --@                      pm_prm_nam => 'pm_enr_efc_dat',
+      --@                      pm_prm_val => pm_enr_efc_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam       ,
+      --@                      pm_prm_nam => 'pm_ply_efc_dat',
+      --@                      pm_prm_val => pm_ply_efc_dat  );
+      --@
+      --
+      IF pm_img_gnr_typ_val = nwt_o.c_pid.tng_img_dat_day
+      THEN
+         --
+         /*HALLAR fecha actualizacion (NFU-50)     Obteniendo: fecha del dia   */
+         --
+         lv_mdf_dat := nwt_dl.dl_trn_cmn.f_get_mdf_dat;
+         --
+         pm_acs_dfn_dat := lv_mdf_dat;
+         --
+      ELSE
+         --
+         IF pm_img_gnr_typ_val = nwt_o.c_pid.tng_img_dat_efc_enr
+         THEN
+            --
+            pm_acs_dfn_dat := pm_enr_efc_dat;
+            --
+         ELSE
+            --
+            pm_acs_dfn_dat := pm_ply_efc_dat;
+            --
+         END IF;
+         --
+      END IF;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam      ,
+      --@                          pm_mth_nam => 'p_acs_dfn_dat');
+      --
+   END p_acs_dfn_dat;
+   --
+   /* -----------------------------------------------------
+   || p_fra_idn_val: ISD-212 - HALLAR imagen identificador marco
+   ||
+   || Se obtiene dentro de la definición de la imagen el
+   || identificador de la marco
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_fra_idn_val(pm_lob_val         IN            nwt_o.d_prt.lob_val         ,
+                           pm_enr_typ_val     IN            nwt_o.d_pid.enr_typ_val     ,
+                           pm_img_gnr_typ_val IN            nwt_o.d_prt.img_gnr_typ_val ,
+                           pm_vld_dat         IN            nwt_o.d_prt.vld_dat         ,
+                           pm_lng_val         IN            nwt_o.d_cmn.lng_val         ,
+                           pm_fra_idn_val        OUT NOCOPY nwt_o.d_pid.fra_idn_val     )
+   IS
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn(pm_pgm_nam => c_pgm_nam      ,
+      --@                          pm_mth_nam => 'p_fra_idn_val');
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam   ,
+      --@                      pm_prm_nam => 'pm_lob_val',
+      --@                      pm_prm_val => pm_lob_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam       ,
+      --@                      pm_prm_nam => 'pm_enr_typ_val',
+      --@                      pm_prm_val => pm_enr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam           ,
+      --@                      pm_prm_nam => 'pm_img_gnr_typ_val',
+      --@                      pm_prm_val => pm_img_gnr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam   ,
+      --@                      pm_prm_nam => 'pm_vld_dat',
+      --@                      pm_prm_val => pm_vld_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam   ,
+      --@                      pm_prm_nam => 'pm_lng_val',
+      --@                      pm_prm_val => pm_lng_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm(pm_pgm_nam => c_pgm_nam       ,
+      --@                      pm_prm_nam => 'pm_fra_idn_val',
+      --@                      pm_prm_val => pm_fra_idn_val  );
+      --@
+      --
+      pm_fra_idn_val := LPAD(pm_lob_val,3,'0');
+      --
+      IF pm_img_gnr_typ_val = nwt_o.c_pid.tng_img_dat_efc_enr OR
+         pm_img_gnr_typ_val = nwt_o.c_pid.tng_img_dat_efc_ply
+      THEN
+         --
+         pm_fra_idn_val := LPAD(pm_lob_val,3,'0') || TO_CHAR(pm_vld_dat, 'YYYYMMDD');
+         --
+      END IF;
+      --
+      IF pm_enr_typ_val = nwt_o.c_pid.enr_typ_rnw
+      THEN
+         --
+         pm_fra_idn_val := pm_fra_idn_val || 'R';
+         --
+      END IF;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam      ,
+      --@                          pm_mth_nam => 'p_fra_idn_val');
+      --
+   END p_fra_idn_val;
+   --
+END bl_pid_img_cue_trn;
+/

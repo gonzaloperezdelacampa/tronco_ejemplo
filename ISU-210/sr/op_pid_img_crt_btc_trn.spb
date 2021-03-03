@@ -1,0 +1,223 @@
+CREATE OR REPLACE PACKAGE BODY nwt_sr.op_pid_img_crt_btc_trn
+AS
+   --
+   /* -------------------- DESCRIPCION --------------------
+   || Logica de servicios del concepto logico IMAGEN
+   || de la familia DEFINICION POLIZA
+   */ -----------------------------------------------------
+   --
+   /* -------------------- VERSION = 1.00 -------------------- */
+   --
+   /* -------------------- MODIFICACIONES -----------------
+   || 2013/05/23 - RVILCHEZ - v 1.00
+   || Creacion
+   */ -----------------------------------------------------
+   --
+   /* --------------------------------------------------
+   || Aqui comienza la declaracion de variables GLOBALES
+   */ --------------------------------------------------
+   --
+   /* -------------------------------------------------
+   || Aqui comienza la declaracion de cursores GLOBALES
+   */ -------------------------------------------------
+   --
+   /* ---------------------------------------------------
+   || Aqui comienza la declaracion de constantes GLOBALES
+   */ ---------------------------------------------------
+   --
+   c_pgm_nam CONSTANT nwt_o.d_trn.pgm_nam := 'op_pid_img_crt_btc_trn';
+   --
+   /* ----------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas LOCALES
+   */ ----------------------------------------------------
+   --
+   /* --------------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas del PACKAGE
+   */ --------------------------------------------------------
+   --
+   /* -----------------------------------------------------
+   || p_sav : ISD-216 - CREAR imagen completo, batch
+   ||
+   || RVILCHEZ
+   ||
+   || Orquestador que dispara la creacion de la imagen de
+   || una poliza desde una operacion batch
+   || Se llamará a la creacion completa de la imagen.
+   ||
+   || - Si se produce algún error, se insertará en la tabla
+   ||   de errores batch el error proceso conjunto que se
+   ||   haya obtenido de la llamada a la creación de la
+   ||   imagen.
+   || - Finalmente, se lanza el error 20123.
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_sav (pm_cmp_val         IN            nwt_o.d_cmu.cmp_val        ,
+                    pm_lob_val         IN            nwt_o.d_prt.lob_val        ,
+                    pm_del_val         IN            nwt_o.d_prt.del_val        ,
+                    pm_sbl_val         IN            nwt_o.d_prt.sbl_val        ,
+                    pm_isu_dcm_val     IN            nwt_o.d_pid.ply_val        ,
+                    pm_enr_typ_val     IN            nwt_o.d_trn.enr_typ_val    ,
+                    pm_img_gnr_typ_val IN            nwt_o.d_trn.img_gnr_typ_val,
+                    pm_enr_efc_dat     IN            nwt_o.d_trn.enr_efc_dat    ,
+                    pm_ply_efc_dat     IN            nwt_o.d_trn.ply_efc_dat    ,
+                    pm_lod_dat         IN            nwt_o.d_trn.lod_dat        ,
+                    pm_btc_prc_val     IN            nwt_o.d_trn.btc_prc_val    ,
+                    pm_btc_mvm_typ_val IN            nwt_o.d_trn.btc_mvm_typ_val,
+                    pm_ses_val         IN            nwt_o.d_trn.ses_val        ,
+                    pm_lng_val         IN            nwt_o.d_cmn.lng_val        ,
+                    pm_usr_val         IN            nwt_o.d_thp.usr_val        ,
+                    pm_o_pid_img_p     IN OUT NOCOPY nwt_o.o_pid_img_p          )
+   IS
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+      --@                           pm_mth_nam => 'p_sav'  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lob_val',
+      --@                       pm_prm_val => pm_lob_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_del_val',
+      --@                       pm_prm_val => pm_del_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_sbl_val',
+      --@                       pm_prm_val => pm_sbl_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_isu_dcm_val',
+      --@                       pm_prm_val => pm_isu_dcm_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_enr_typ_val',
+      --@                       pm_prm_val => pm_enr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam           ,
+      --@                       pm_prm_nam => 'pm_img_gnr_typ_val',
+      --@                       pm_prm_val => pm_img_gnr_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_enr_efc_dat',
+      --@                       pm_prm_val => pm_enr_efc_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_ply_efc_dat',
+      --@                       pm_prm_val => pm_ply_efc_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lod_dat',
+      --@                       pm_prm_val => pm_lod_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_btc_prc_val',
+      --@                       pm_prm_val => pm_btc_prc_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam           ,
+      --@                       pm_prm_nam => 'pm_btc_mvm_typ_val',
+      --@                       pm_prm_val => pm_btc_mvm_typ_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_ses_val',
+      --@                       pm_prm_val => pm_ses_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_usr_val',
+      --@                       pm_prm_val => pm_usr_val  );
+      --@
+      --
+      BEGIN
+         --
+         -- 1. CREAR imagen completo (ISD-210)
+         op_pid_img_crt.p_sav (pm_cmp_val         => pm_cmp_val        ,
+                               pm_lob_val         => pm_lob_val        ,
+                               pm_del_val         => pm_del_val        ,
+                               pm_sbl_val         => pm_sbl_val        ,
+                               pm_enr_typ_val     => pm_enr_typ_val    ,
+                               pm_img_gnr_typ_val => pm_img_gnr_typ_val,
+                               pm_enr_efc_dat     => pm_enr_efc_dat    ,
+                               pm_ply_efc_dat     => pm_ply_efc_dat    ,
+                               pm_ses_val         => pm_ses_val        ,
+                               pm_lng_val         => pm_lng_val        ,
+                               pm_usr_val         => pm_usr_val        ,
+                               pm_o_pid_img_p     => pm_o_pid_img_p    );
+         --
+      EXCEPTION
+         --
+         WHEN nwt_o.e_trn.ERR
+         THEN
+            --
+            IF pm_o_pid_img_p IS NOT NULL
+            THEN
+               --
+               -- CREAR error emision completo conjunto (ISU-746)
+               op_ply_ise_crt.p_prc_cpe_tbl (pm_poc_dat         => pm_lod_dat                        ,
+                                             pm_ord_val         => pm_btc_prc_val                    ,
+                                             pm_btc_mvm_typ_val => pm_btc_mvm_typ_val                ,
+                                             pm_cmp_val         => pm_cmp_val                        ,
+                                             pm_isu_dcm_val     => pm_isu_dcm_val                    ,
+                                             pm_rsk_val         => nwt_o.c_pid.rsk_ply               ,
+                                             pm_o_trn_err_t     => pm_o_pid_img_p.trn_prc_s.trn_err_t,
+                                             pm_lng_val         => pm_lng_val                        );
+               --
+            END IF;
+            --
+            -- CREAR error (NFU-61)
+            dl_trn_err.p_shw (pm_err_val => 20123                ,
+                              pm_lng_val => pm_lng_val           ,
+                              pm_tem_val => ''                   ,
+                              pm_fld_val => ''                   ,
+                              pm_pgm_val => c_pgm_nam || '.p_sav');
+            --
+         --
+         WHEN OTHERS
+         THEN
+            --
+            IF pm_o_pid_img_p IS NULL
+            THEN
+               --
+               pm_o_pid_img_p := dl_pid_img.f_inl_p;
+               --
+            END IF;
+            --
+            -- APILAR ERROR (NFU-42) en error proceso
+            dl_trn_err.p_add (pm_err_val     => SQLCODE                           ,
+                              pm_err_nam     => SQLERRM                           ,
+                              pm_o_trn_err_t => pm_o_pid_img_p.trn_prc_s.trn_err_t);
+            --
+            -- CREAR error emision completo conjunto (ISU-746)
+            op_ply_ise_crt.p_prc_cpe_tbl (pm_poc_dat         => pm_lod_dat                        ,
+                                          pm_ord_val         => pm_btc_prc_val                    ,
+                                          pm_btc_mvm_typ_val => pm_btc_mvm_typ_val                ,
+                                          pm_cmp_val         => pm_cmp_val                        ,
+                                          pm_isu_dcm_val     => pm_isu_dcm_val                    ,
+                                          pm_rsk_val         => nwt_o.c_pid.rsk_ply               ,
+                                          pm_o_trn_err_t     => pm_o_pid_img_p.trn_prc_s.trn_err_t,
+                                          pm_lng_val         => pm_lng_val                        );
+            --
+            -- CREAR error (NFU-61)
+            dl_trn_err.p_shw (pm_err_val => 20123                ,
+                              pm_lng_val => pm_lng_val           ,
+                              pm_tem_val => ''                   ,
+                              pm_fld_val => ''                   ,
+                              pm_pgm_val => c_pgm_nam || '.p_sav');
+            --
+         --
+      END;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm (pm_pgm_nam => c_pgm_nam,
+      --@                           pm_mth_nam => 'p_sav'  );
+      --
+   END p_sav;
+   --
+END op_pid_img_crt_btc_trn;
+/

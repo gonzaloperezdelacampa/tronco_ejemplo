@@ -1,0 +1,507 @@
+CREATE OR REPLACE PACKAGE BODY nwt_dl.dl_xbackground
+AS
+   --
+   /* -------------------- DESCRIPCION --------------------
+   || Logica de datos de la tabla xbackground
+   */ -----------------------------------------------------
+   --
+   /* -------------------- VERSION = 1.00 -------------------- */
+   --
+   /* -------------------- MODIFICACIONES -----------------
+   || 2013/05/02 - FJMORENO - v 1.00
+   || Creacion
+   */ ------------------------------------------------------
+   --
+   /* --------------------------------------------------
+   || Aqui comienza la declaracion de variables GLOBALES
+   */ --------------------------------------------------
+   --
+   /* -------------------------------------------------
+   || Aqui comienza la declaracion de cursores GLOBALES
+   */ -------------------------------------------------
+   --
+   /* ---------------------------------------------------
+   || Aqui comienza la declaracion de constantes GLOBALES
+   */ ---------------------------------------------------
+   --
+   c_pgm_nam CONSTANT nwt_o.d_trn.pgm_nam := 'dl_xbackground';
+   --
+   /* ----------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas LOCALES
+   */ ----------------------------------------------------
+   --
+   /* --------------------------------------------------------
+   || Aqui comienza la declaracion de subprogramas del PACKAGE
+   */ --------------------------------------------------------
+   --
+   /* -----------------------------------------------------
+   || p_get : ISD-808 - dl_xbackground.p_get
+   || OHERRERA
+   || CONSULTAR imagen
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_get(pm_cmp_val     IN            nwt_o.d_pid.cmp_val    ,
+                   pm_fra_idn_val IN            nwt_o.d_pid.fra_idn_val,
+                   pm_crt_dat     IN            nwt_o.d_pid.crt_dat    ,
+                   pm_lng_val     IN            nwt_o.d_cmn.lng_val    ,
+                   pm_o_pid_img_p IN OUT NOCOPY nwt_o.o_pid_img_p      )
+   IS
+      --
+      CURSOR lc_xbackground(pc_cmp_val     IN nwt_o.d_ply.cmp_val    ,
+                            pc_fra_idn_val IN nwt_o.d_pid.fra_idn_val,
+                            pc_crt_dat     IN nwt_o.d_pid.crt_dat    )
+      IS
+         SELECT nwt_o.o_pid_img_p(nwt_o.o_trn_prc_s(pm_trn_rwd_t => nwt_o.o_trn_rwd_t(pm_trn_rwd_s => nwt_o.o_trn_rwd_s(pm_rwd_val => rowidtochar(a.rowid)))),
+                                  nwt_o.o_pid_img_s(pm_cmp_val     => a.cod_cia     ,
+                                                    pm_fra_idn_val => a.cod_marco   ,
+                                                    pm_crt_dat     => a.fec_creacion))
+             FROM xbackground a
+             WHERE a.cod_cia = pc_cmp_val
+                AND a.cod_marco    = pc_fra_idn_val
+                AND a.fec_Creacion = pc_crt_dat;
+      --
+      lv_o_pid_img_p nwt_o.o_pid_img_p     ;
+      lv_tb_msg_anx  nwt_o.d_trn.tb_msg_anx;
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam ,
+      --@                           pm_mth_nam => 'p_get'   );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_fra_idn_val',
+      --@                       pm_prm_val => pm_fra_idn_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_crt_dat',
+      --@                       pm_prm_val => pm_crt_dat  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --
+      OPEN  lc_xbackground(pc_cmp_val        =>   pm_cmp_val     ,
+                           pc_fra_idn_val    =>   pm_fra_idn_val ,
+                           pc_crt_dat        =>   pm_crt_dat     );
+      --
+      FETCH lc_xbackground INTO lv_o_pid_img_p;
+      --
+      CLOSE lc_xbackground;
+      --
+      IF lv_o_pid_img_p IS NULL THEN
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'CMP_VAL'    ,
+                              pm_fld_val    => pm_cmp_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'FRA_IDN_VAL' ,
+                              pm_fld_val    => pm_fra_idn_val,
+                              pm_tb_msg_anx => lv_tb_msg_anx );
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'LNG_VAL'    ,
+                              pm_fld_val    => pm_lng_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'CRT_DAT'    ,
+                              pm_fld_val    => pm_crt_dat   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_shw(pm_err_val    => 20001                ,
+                          pm_lng_val    => pm_lng_val           ,
+                          pm_tem_val    => 'IMG'                ,
+                          pm_tb_msg_anx => lv_tb_msg_anx        ,
+                          pm_pgm_val    => c_pgm_nam || '.p_get');
+         --
+      END IF;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam ,
+      --@                          pm_mth_nam => 'p_get'   );
+      --
+      pm_o_pid_img_p := lv_o_pid_img_p;
+      --      
+   END p_get;
+   --
+   /* -----------------------------------------------------
+   || p_get_001 : ISD-813 - dl_xbackground.p_get_001
+   || FJMORENO
+   || Logica de datos de la tabla xbackground.
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_get_001( pm_cmp_val         IN             nwt_o.d_pid.cmp_val ,
+                        pm_lng_val         IN             nwt_o.d_cmn.lng_val ,
+                        pm_o_pid_img_p     IN OUT NOCOPY  nwt_o.o_pid_img_p   )
+   IS
+      --
+      CURSOR lc_xbackground(pc_cmp_val  IN  nwt_o.d_pid.cmp_val)
+      IS
+         SELECT nwt_o.o_pid_img_p(nwt_o.o_trn_prc_s(pm_trn_rwd_t => nwt_o.o_trn_rwd_t(pm_trn_rwd_s => nwt_o.o_trn_rwd_s(pm_rwd_val => rowidtochar(a.rowid)))),
+                                  nwt_o.o_pid_img_s(pm_cmp_val     => a.cod_cia     ,
+                                                    pm_fra_idn_val => a.cod_marco   ,
+                                                    pm_crt_dat     => a.fec_creacion))
+             FROM xbackground a
+             WHERE cod_cia = pc_cmp_val
+                FOR UPDATE OF a.cod_cia NOWAIT;
+      --
+      lv_tb_msg_anx nwt_o.d_trn.tb_msg_anx;
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam  ,
+      --@                           pm_mth_nam => 'p_get_001');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --
+      OPEN  lc_xbackground(pc_cmp_val  => pm_cmp_val );
+      --
+      FETCH lc_xbackground INTO pm_o_pid_img_p;
+      --
+      CLOSE lc_xbackground;
+      --
+      IF pm_o_pid_img_p IS NULL THEN
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'CMP_VAL'    ,
+                              pm_fld_val    => pm_cmp_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'LNG_VAL'    ,
+                              pm_fld_val    => pm_lng_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_shw(pm_err_val    => 20001                    ,
+                          pm_lng_val    => pm_lng_val               ,
+                          pm_tem_val    => 'IMG'                    ,
+                          pm_tb_msg_anx => lv_tb_msg_anx            ,
+                          pm_pgm_val    => c_pgm_nam || '.p_get_001');
+         --
+      END IF;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam  ,
+      --@                          pm_mth_nam => 'p_get_001');
+      --
+   END p_get_001;
+   --
+   /* -----------------------------------------------------
+   || p_get_002 : ISD-818 - dl_xbackground.p_get_002
+   || FJMORENO
+   || Logica de datos de la tabla xbackground.
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_get_002( pm_cmp_val     IN            nwt_o.d_pid.cmp_val    ,
+                        pm_fra_idn_val IN            nwt_o.d_pid.fra_idn_val,
+                        pm_lng_val     IN            nwt_o.d_cmn.lng_val    ,
+                        pm_o_pid_img_p IN OUT NOCOPY nwt_o.o_pid_img_p      )
+   IS
+      --
+      CURSOR lc_xbackground(pc_cmp_val      IN  nwt_o.d_pid.cmp_val     ,
+                            pc_fra_idn_val  IN  nwt_o.d_pid.fra_idn_val )
+      IS
+         SELECT nwt_o.o_pid_img_p(nwt_o.o_trn_prc_s(pm_trn_rwd_t => nwt_o.o_trn_rwd_t(pm_trn_rwd_s => nwt_o.o_trn_rwd_s(pm_rwd_val => rowidtochar(a.rowid)))),
+                                  nwt_o.o_pid_img_s(pm_cmp_val     => a.cod_cia     ,
+                                                    pm_fra_idn_val => a.cod_marco   ,
+                                                    pm_crt_dat     => a.fec_creacion))
+         FROM xbackground a
+         WHERE cod_cia = pc_cmp_val
+            AND cod_marco = pc_fra_idn_val
+            FOR UPDATE OF a.cod_cia NOWAIT;
+      --
+      lv_tb_msg_anx nwt_o.d_trn.tb_msg_anx;
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam  ,
+      --@                           pm_mth_nam => 'p_get_002');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_fra_idn_val',
+      --@                       pm_prm_val => pm_fra_idn_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --
+      OPEN  lc_xbackground(pc_cmp_val     => pm_cmp_val     ,
+                           pc_fra_idn_val => pm_fra_idn_val );
+      --
+      FETCH lc_xbackground INTO pm_o_pid_img_p;
+      --
+      CLOSE lc_xbackground;
+      --
+      IF pm_o_pid_img_p IS NULL THEN
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'CMP_VAL'    ,
+                              pm_fld_val    => pm_cmp_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'FRA_IDN_VAL' ,
+                              pm_fld_val    => pm_fra_idn_val,
+                              pm_tb_msg_anx => lv_tb_msg_anx );
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'LNG_VAL'    ,
+                              pm_fld_val    => pm_lng_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_shw(pm_err_val    => 20001                    ,
+                          pm_lng_val    => pm_lng_val               ,
+                          pm_tem_val    => 'IMG'                    ,
+                          pm_tb_msg_anx => lv_tb_msg_anx            ,
+                          pm_pgm_val    => c_pgm_nam || '.p_get_002');
+         --
+      END IF;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam  ,
+      --@                          pm_mth_nam => 'p_get_002');
+      --
+   END p_get_002;
+   --
+   /* -----------------------------------------------------
+   || p_get_003 : ISD-821 - dl_xbackground.p_get_003
+   || FJMORENO
+   || Logica de datos de la tabla xbackground.
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_get_003( pm_cmp_val     IN            nwt_o.d_pid.cmp_val    ,
+                        pm_fra_idn_val IN            nwt_o.d_pid.fra_idn_val,
+                        pm_lng_val     IN            nwt_o.d_cmn.lng_val    ,
+                        pm_o_pid_img_p IN OUT NOCOPY nwt_o.o_pid_img_p      )
+   IS
+      --
+      CURSOR lc_xbackground(pc_cmp_val      IN  nwt_o.d_pid.cmp_val     ,
+                            pc_fra_idn_val  IN  nwt_o.d_pid.fra_idn_val )
+      IS
+         SELECT nwt_o.o_pid_img_p(nwt_o.o_trn_prc_s(pm_trn_rwd_t => nwt_o.o_trn_rwd_t(pm_trn_rwd_s => nwt_o.o_trn_rwd_s(pm_rwd_val => rowidtochar(a.rowid)))),
+                                  nwt_o.o_pid_img_s(pm_cmp_val     => a.cod_cia     ,
+                                                    pm_fra_idn_val => a.cod_marco   ,
+                                                    pm_crt_dat     => a.fec_creacion))
+         FROM xbackground a
+         WHERE cod_cia = pc_cmp_val
+            AND cod_marco = pc_fra_idn_val;
+      --
+      lv_o_pid_img_p nwt_o.o_pid_img_p     ;
+      lv_tb_msg_anx  nwt_o.d_trn.tb_msg_anx;
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam  ,
+      --@                           pm_mth_nam => 'p_get_003');
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_fra_idn_val',
+      --@                       pm_prm_val => pm_fra_idn_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --
+      OPEN  lc_xbackground(pc_cmp_val     => pm_cmp_val     ,
+                           pc_fra_idn_val => pm_fra_idn_val );
+      --
+      FETCH lc_xbackground INTO lv_o_pid_img_p;
+      --
+      CLOSE lc_xbackground;
+      --
+      IF lv_o_pid_img_p IS NULL THEN
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'CMP_VAL'    ,
+                              pm_fld_val    => pm_cmp_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'FRA_IDN_VAL' ,
+                              pm_fld_val    => pm_fra_idn_val,
+                              pm_tb_msg_anx => lv_tb_msg_anx );
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'LNG_VAL'    ,
+                              pm_fld_val    => pm_lng_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_shw(pm_err_val    => 20001                    ,
+                          pm_lng_val    => pm_lng_val               ,
+                          pm_tem_val    => 'IMG'                    ,
+                          pm_tb_msg_anx => lv_tb_msg_anx            ,
+                          pm_pgm_val    => c_pgm_nam || '.p_get_003');
+         --
+      END IF;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam  ,
+      --@                          pm_mth_nam => 'p_get_003');
+      --
+      pm_o_pid_img_p := lv_o_pid_img_p;
+      -- 
+   END p_get_003;
+   --
+   /* -----------------------------------------------------
+   || p_dlt : ISD-837 - dl_xbackground.p_dlt
+   || FJMORENO
+   || Logica de datos de la tabla xbackground.
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_dlt( pm_cmp_val     IN nwt_o.d_pid.cmp_val     ,
+                    pm_fra_idn_val IN nwt_o.d_pid.fra_idn_val ,
+                    pm_lng_val     IN nwt_o.d_cmn.lng_val     )
+   IS
+      --
+      lv_tb_msg_anx nwt_o.d_trn.tb_msg_anx;
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+      --@                           pm_mth_nam => 'p_dlt'  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_cmp_val',
+      --@                       pm_prm_val => pm_cmp_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam       ,
+      --@                       pm_prm_nam => 'pm_fra_idn_val',
+      --@                       pm_prm_val => pm_fra_idn_val  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --
+      DELETE FROM  xbackground
+      WHERE  cod_cia     = pm_cmp_val
+         AND cod_marco   = pm_fra_idn_val;
+      --
+      IF SQL%ROWCOUNT = 0 THEN
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'CMP_VAL'    ,
+                              pm_fld_val    => pm_cmp_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'FRA_IDN_VAL' ,
+                              pm_fld_val    => pm_fra_idn_val,
+                              pm_tb_msg_anx => lv_tb_msg_anx );
+         --
+         dl_trn_err.p_add_anx(pm_fld_nam    => 'LNG_VAL'    ,
+                              pm_fld_val    => pm_lng_val   ,
+                              pm_tb_msg_anx => lv_tb_msg_anx);
+         --
+         dl_trn_err.p_shw(pm_err_val    => 20048                ,
+                          pm_lng_val    => pm_lng_val           ,
+                          pm_tem_val    => 'IMG'                ,
+                          pm_tb_msg_anx => lv_tb_msg_anx        ,
+                          pm_pgm_val    => c_pgm_nam || '.p_dlt');
+         --
+      END IF;
+      --
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam,
+      --@                          pm_mth_nam => 'p_dlt'  );
+      --
+   END p_dlt;
+   --
+   /* -----------------------------------------------------
+   || p_inr : ISD-859 - dl_xbackground.p_inr
+   || OHERRERA
+   || TRASPASAR imagen a trabajo
+   */ -----------------------------------------------------
+   --
+   PROCEDURE p_inr( pm_lng_val         IN                nwt_o.d_cmn.lng_val  ,
+                    pm_o_pid_img_p     IN OUT NOCOPY     nwt_o.o_pid_img_p    )
+   IS
+      --
+      lv_tb_msg_anx nwt_o.d_trn.tb_msg_anx;
+      --
+   BEGIN
+      --
+      --@ dl_trn_dbg.p_set_mth_bgn (pm_pgm_nam => c_pgm_nam,
+      --@                           pm_mth_nam => 'p_inr'  );
+      --@
+      --@ dl_trn_dbg.p_set_prm (pm_pgm_nam => c_pgm_nam   ,
+      --@                       pm_prm_nam => 'pm_lng_val',
+      --@                       pm_prm_val => pm_lng_val  );
+      --@
+      --
+      BEGIN
+         --
+         INSERT INTO XBACKGROUND
+                (
+                 cod_cia,
+                 cod_marco,
+                 fec_Creacion
+                )
+          VALUES(
+                 pm_o_pid_img_p.pid_img_s.cmp_val,
+                 pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                 pm_o_pid_img_p.pid_img_s.crt_dat
+                 );
+         --
+         IF SQL%ROWCOUNT = 0
+         THEN
+            --
+            dl_trn_err.p_add_anx(pm_fld_nam    => 'CMP_VAL'                       ,
+                                 pm_fld_val    => pm_o_pid_img_p.pid_img_s.cmp_val,
+                                 pm_tb_msg_anx => lv_tb_msg_anx                   );
+            --
+            dl_trn_err.p_add_anx(pm_fld_nam    => 'FRA_IDN_VAL'                       ,
+                                 pm_fld_val    => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                 pm_tb_msg_anx => lv_tb_msg_anx                       );
+            --
+            dl_trn_err.p_add_anx(pm_fld_nam    => 'CRT_DAT'                       ,
+                                 pm_fld_val    => pm_o_pid_img_p.pid_img_s.crt_dat,
+                                 pm_tb_msg_anx => lv_tb_msg_anx                   );
+            --
+            dl_trn_err.p_add_anx(pm_fld_nam    => 'LNG_VAL'    ,
+                                 pm_fld_val    => pm_lng_val   ,
+                                 pm_tb_msg_anx => lv_tb_msg_anx);
+            --
+            dl_trn_err.p_shw(pm_err_val    => 20046                ,
+                             pm_lng_val    => pm_lng_val           ,
+                             pm_tem_val    => 'IMG'                ,
+                             pm_tb_msg_anx => lv_tb_msg_anx        ,
+                             pm_pgm_val    => c_pgm_nam || '.p_inr');
+            --
+          END IF;
+          --
+      EXCEPTION
+         WHEN nwt_o.e_trn.DPL_VAL THEN
+            --
+            dl_trn_err.p_add_anx(pm_fld_nam    => 'CMP_VAL'                       ,
+                                 pm_fld_val    => pm_o_pid_img_p.pid_img_s.cmp_val,
+                                 pm_tb_msg_anx => lv_tb_msg_anx                   );
+            --
+            dl_trn_err.p_add_anx(pm_fld_nam    => 'FRA_IDN_VAL'                       ,
+                                 pm_fld_val    => pm_o_pid_img_p.pid_img_s.fra_idn_val,
+                                 pm_tb_msg_anx => lv_tb_msg_anx                       );
+            --
+            dl_trn_err.p_add_anx(pm_fld_nam    => 'CRT_DAT'                       ,
+                                 pm_fld_val    => pm_o_pid_img_p.pid_img_s.crt_dat,
+                                 pm_tb_msg_anx => lv_tb_msg_anx                   );
+            --
+            dl_trn_err.p_add_anx(pm_fld_nam    => 'LNG_VAL'    ,
+                                 pm_fld_val    => pm_lng_val   ,
+                                 pm_tb_msg_anx => lv_tb_msg_anx);
+            --
+            dl_trn_err.p_shw(pm_err_val    => 20002                ,
+                             pm_lng_val    => pm_lng_val           ,
+                             pm_tem_val    => 'IMG'                ,
+                             pm_tb_msg_anx => lv_tb_msg_anx        ,
+                             pm_pgm_val    => c_pgm_nam || '.p_inr');
+            --
+      END;
+      --@
+      --@ dl_trn_dbg.p_set_mth_trm(pm_pgm_nam => c_pgm_nam,
+      --@                          pm_mth_nam => 'p_inr'  );
+      --
+   END p_inr;
+   --
+END dl_xbackground;
+/

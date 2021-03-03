@@ -1,0 +1,5 @@
+ISD-2714 - OFRECER TRATAR imagen, marca devuelve todo, anulacion, orquestacion
+ISD-210  - CREAR imagen completo
+ISD-255, ISD-211, ISD-212, CMN-565, CMN-569, ISD-213
+X2800010-->Tabla de Polizas.
+P2000030-->Tabla de presuouestos.

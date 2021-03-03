@@ -1,0 +1,8 @@
+-- Conexion al esquema
+--
+CONNECT NWT_SR;
+--
+-- Sinonimos
+--
+CREATE OR REPLACE SYNONYM nwt_sr.op_pid_img_pss_can
+                      FOR nwt_sr.op_pid_img_pss_can_trn;

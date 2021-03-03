@@ -1,0 +1,13 @@
+CONNECT NWT_BL;
+--
+GRANT EXECUTE ON NWT_BL.bl_pid_img_trn
+              TO NWT_SR;
+--
+-- SINONIMOS
+--
+CREATE OR REPLACE SYNONYM NWT_BL.bl_pid_img
+                      FOR NWT_BL.bl_pid_img_trn;
+--
+CREATE OR REPLACE SYNONYM NWT_SR.bl_pid_img
+                      FOR NWT_BL.bl_pid_img_trn;
+--
